@@ -248,7 +248,7 @@ TextureGL::TextureGL(Device* device, Type type, Format format, unsigned int widt
 
     id = createTexture(type, format, width, height, depth, mipLevels, caps);
 
-    if (FFlag::GraphicsTextureCommitChanges && usage == Usage_Dynamic && caps.ext3)
+    if (FFlag::GraphicsTextureCommitChanges && usage == Usage_Dynamic && caps.extMapBufferRange)
     {
         scratchSize = getTextureSize(type, format, width, height, depth, mipLevels);
         
@@ -379,6 +379,11 @@ bool TextureGL::supportsLocking() const
 
 Texture::LockResult TextureGL::lock(unsigned int index, unsigned int mip, const TextureRegion& region)
 {
+#ifdef __EMSCRIPTEN__
+    Texture::LockResult result = {0, 0, 0};
+    return result;
+#else
+
     if (!scratchId)
     {
     	Texture::LockResult result = {0, 0, 0};
@@ -420,16 +425,25 @@ Texture::LockResult TextureGL::lock(unsigned int index, unsigned int mip, const 
 	Texture::LockResult result = {data, getImageSize(format, region.width, 1), getImageSize(format, region.width, region.height) };
     
     return result;
+
+#endif
 }
 
 void TextureGL::unlock(unsigned int index, unsigned int mip)
 {
+#ifdef __EMSCRIPTEN__
+    (void)index;
+    (void)mip;
+#else
+
     if (!scratchId)
         return;
 
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, scratchId);
     glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+
+#endif
 }
 
 shared_ptr<Renderbuffer> TextureGL::getRenderbuffer(unsigned int index, unsigned int mip)

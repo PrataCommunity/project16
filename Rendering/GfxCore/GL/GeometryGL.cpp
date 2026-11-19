@@ -130,6 +130,13 @@ template <typename Base> GeometryBufferGL<Base>::~GeometryBufferGL()
 
 template <typename Base> void* GeometryBufferGL<Base>::lock(GeometryBuffer::LockMode mode)
 {
+#ifdef __EMSCRIPTEN__
+    RBXASSERT(!locked);
+    unsigned int size = this->elementSize * this->elementCount;
+    locked = new char[size];
+    return locked;
+#else
+
     RBXASSERT(!locked);
     
     unsigned int size = this->elementSize * this->elementCount;
@@ -160,10 +167,20 @@ template <typename Base> void* GeometryBufferGL<Base>::lock(GeometryBuffer::Lock
     RBXASSERT(locked);
 
     return locked;  
+
+#endif
 }
 
 template <typename Base> void GeometryBufferGL<Base>::unlock()
 {
+#ifdef __EMSCRIPTEN__
+    RBXASSERT(locked);
+    glBindBuffer(target, id);
+    glBufferSubData(target, 0, this->elementSize * this->elementCount, locked);
+    delete[] static_cast<char*>(locked);
+    locked = NULL;
+#else
+
     RBXASSERT(locked);
 
     const DeviceCapsGL& caps = static_cast<DeviceGL*>(this->device)->getCapsGL();
@@ -182,6 +199,8 @@ template <typename Base> void GeometryBufferGL<Base>::unlock()
 	}
 
     locked = NULL;
+
+#endif
 }
 
 template <typename Base> void GeometryBufferGL<Base>::upload(unsigned int offset, const void* data, unsigned int size)

@@ -18,7 +18,11 @@ LOGGROUP(Graphics)
 
 FASTFLAGVARIABLE(DebugGraphicsGL, false)
 
+#ifdef __EMSCRIPTEN__
+FASTFLAGVARIABLE(GraphicsGL3, true)
+#else
 FASTFLAGVARIABLE(GraphicsGL3, false)
+#endif
 
 FASTFLAG(RenderVR)
 
@@ -121,6 +125,14 @@ static DeviceCapsGL createDeviceCaps(ContextGL* context, const std::set<std::str
     caps.extTimerQuery = false;
     caps.extDebugMarkers = extensions.count("GL_EXT_debug_marker");
     caps.extSync = version3;
+
+#ifdef __EMSCRIPTEN__
+    // WebGL 2 has no native mapped-buffer or server-side wait-sync paths.
+    // GeometryGL uses CPU staging plus glBufferSubData; dynamic textures use direct uploads.
+    caps.extMapBuffer = false;
+    caps.extMapBufferRange = false;
+    caps.extSync = false;
+#endif
     
     return caps;
 }
@@ -475,6 +487,7 @@ void DeviceGL::endFrame()
 	}
 #endif
 
+#ifndef __EMSCRIPTEN__
     if (FFlag::GraphicsGLReduceLatency && caps.extSync)
     {
         // Wait for last frame to finish on GPU
@@ -498,6 +511,7 @@ void DeviceGL::endFrame()
             frameEventQueryIssued = true;
         }
     }
+#endif
 
 	if (vr && vrEnabled)
 	{

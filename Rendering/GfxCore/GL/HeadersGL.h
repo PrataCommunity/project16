@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdint.h>
+
 #ifdef RBX_PLATFORM_IOS
     #include <OpenGLES/ES2/gl.h>
     #include <OpenGLES/ES2/glext.h>
@@ -8,7 +10,7 @@
     #endif
 
     #define GLES
-#elif defined(__ANDROID__)
+#elif defined(__ANDROID__) || defined(__EMSCRIPTEN__)
     #include <GLES2/gl2.h>
     #include <GLES2/gl2ext.h>
 
@@ -19,7 +21,7 @@
     void glewInitRBX();
 #endif
 
-#ifdef __ANDROID__
+#if defined(__ANDROID__) || defined(__EMSCRIPTEN__)
 typedef struct __GLsync *GLsync;
 typedef uint64_t GLuint64;
 #endif
